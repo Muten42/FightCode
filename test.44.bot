@@ -1,0 +1,215 @@
+//Bot #26907
+
+//FightCode can only understand your robot
+//if its class is called Robot
+
+var conf =
+    {
+      robot:
+      {
+        rotationAngle: 1,
+        classicDistance: 1,
+        fightDistance: 10,
+        warningDistance: 40,
+        emergencyDistance: 100,
+        status: "Search"
+      },
+      clone:
+      {
+        rotationAngle: -1,
+        classicDistance: 1,
+        fightDistance: 10,
+        warningDistance: 100,
+        emergencyDistance: 100,
+        status: "Search"
+      },
+      wallCollisionAngleCoef: 20,
+      fireAngleCorrectionCoef: 20,
+      hitByBulletAngleCoef: 20
+    };
+
+function initConf()
+{
+  initConf("robot");
+  initConf("clone");
+
+  conf.wallCollisionAngleCoef = 20;
+  conf.fireAngleCorrectionCoef = 20;
+  conf.hitByBulletAngleCoef = 20;
+};
+
+function initConf(subject)
+{
+  if (subject == "robot")
+  {
+    conf.robot.rotationAngle = 2;
+    conf.robot.classicDistance = 1;
+    conf.robot.fightDistance = 50;
+    conf.robot.warningDistance = 40;
+    conf.robot.emergencyDistance = 100;
+    //conf.robot.status = "Search";
+  }
+  else
+  {
+    conf.clone.rotationAngle = -2;
+    conf.clone.classicDistance = 1;
+    conf.clone.fightDistance = 50;
+    conf.clone.warningDistance = 100;
+    conf.clone.emergencyDistance = 100;
+    //conf.clone.status = "Search";
+  }
+};
+
+function rotateRobot(robot)
+{
+  var angle = robot.cannonRelativeAngle - 90;
+    
+    if (angle >= 180)
+    angle = angle - 180;
+  
+  robot.turn(angle);
+  robot.rotateCannon(-1 * angle);
+}
+
+var Robot = function(robot)
+{
+  initConf();
+  robot.clone();
+};
+
+Robot.prototype.onIdle = function(ev)
+{
+  var robot = ev.robot;
+  if(robot.parentId)
+  {
+    if (robot.gunCoolDownTime == 0)
+    {
+      initConf("clone");
+    
+      robot.turn(conf.clone.rotationAngle);
+      robot.ahead(conf.clone.classicDistance);
+      robot.rotateCannon(conf.clone.rotationAngle);
+    }
+  }
+  else
+  {
+    if (robot.gunCoolDownTime == 0)
+    {
+      initConf("robot");
+        
+      robot.turn(conf.robot.rotationAngle);
+      robot.rotateCannon(conf.robot.rotationAngle);
+      robot.ahead(conf.robot.classicDistance);
+    }
+  }
+};
+
+Robot.prototype.onWallCollision = function(ev)
+{
+  var robot = ev.robot;
+  
+  if(robot.parentId)
+  {
+    robot.turn(conf.clone.rotationAngle * conf.wallCollisionAngleCoef);
+    robot.rotateCannon(conf.clone.rotationAngle * conf.wallCollisionAngleCoef);
+    robot.back(conf.clone.warningDistance);
+  }
+  else
+  {
+    robot.turn(conf.robot.rotationAngle * conf.wallCollisionAngleCoef);
+    robot.rotateCannon(conf.robot.rotationAngle * conf.wallCollisionAngleCoef);
+    robot.back(conf.robot.warningDistance);
+  }
+};
+
+Robot.prototype.onRobotCollision = function(ev)
+{
+  var robot = ev.robot;
+  
+  if(robot.parentId)
+  {
+    if (conf.clone.status == "Search")
+    {
+	robot.turn(conf.clone.rotationAngle * conf.wallCollisionAngleCoef);
+    	robot.back(conf.clone.warningDistance);
+    }
+  }
+  else
+  {
+    if (conf.robot.status == "Search")
+    {
+      robot.turn(conf.robot.rotationAngle * conf.wallCollisionAngleCoef);
+      robot.back(conf.robot.warningDistance);
+    }
+  }
+};
+
+Robot.prototype.onScannedRobot = function(ev)
+{
+  var robot = ev.robot;
+  var scannedRobot = ev.scannedRobot;
+  
+  // Is it me?
+  if ((robot.id == scannedRobot.parentId) || (robot.parentId == scannedRobot.id))
+  return;
+  
+  // Is it a clone of the opponent?
+  if (scannedRobot.parentId)
+    return;
+  
+  robot.fire();
+  
+  if(robot.parentId)
+  {
+    if (conf.clone.status == "Search")
+    {
+      conf.clone.status = "Destroy";
+      
+      rotateRobot(robot);
+    }
+    else if (conf.clone.status == "Destroy")
+    {
+      rotateRobot(robot);
+      robot.ahead(conf.clone.fightDistance);
+    }
+    else
+      initConf("clone");
+  }
+  else
+  {
+    if (conf.robot.status == "Search")
+    {
+      conf.robot.status = "Destroy";
+      
+      rotateRobot(robot);
+    }
+    else if (conf.robot.status == "Destroy")
+    {
+      rotateRobot(robot);
+      robot.ahead(conf.robot.fightDistance);
+    }
+    else
+      initConf("robot");
+  }
+  robot.fire();
+};
+
+Robot.prototype.onHitByBullet = function(ev)
+{
+  var robot = ev.robot;
+  var angleWithOpponent = ev.bearing;
+  
+  if (robot.availableDisappears > 0)
+    robot.disappear();
+  
+/*  if(robot.parentId)
+  {
+    robot.back(conf.clone.emergencyDistance);
+    robot.rotateCannon(angleWithOpponent);
+  }
+  else
+  {
+    robot.back(conf.robot.emergencyDistance);
+    robot.rotateCannon(angleWithOpponent);
+  }*/
+};

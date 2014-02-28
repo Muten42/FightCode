@@ -1,0 +1,71 @@
+
+// Bot #26891
+
+
+//FightCode can only understand your robot
+//if its class is called Robot
+var Robot = function(robot) {
+    
+};
+
+Robot.prototype.onIdle = function(ev) {
+  var robot = ev.robot;
+  var distanceDodge = 20;
+  var rotationAngle = 40;
+  
+  if (robot.availableClones > 0)
+     robot.clone();
+  
+  robot.ahead(distanceDodge);  
+  
+  robot.rotateCannon(rotationAngle);
+  
+  robot.back(distanceDodge);
+};
+
+Robot.prototype.onScannedRobot = function(ev) {
+  var robot = ev.robot;
+  var otherRobot = ev.scannedRobot;
+  var rotationAngle = 40;
+  var anticipation = 2;
+  
+  if ((otherRobot.id != robot.parentId) && (otherRobot.parentId != robot.id))
+  {
+    robot.rotateCannon(anticipation);
+    robot.fire();
+    robot.rotateCannon(-1 * (rotationAngle + anticipation));
+  }
+};
+
+Robot.prototype.onHitByBullet = function(ev) {
+  var robot = ev.robot;
+  var rotationAngle = 66;
+  var distanceMove = 400;
+  
+  var angleWithOpponent = ev.bearing;
+  
+  if (robot.availableDisappears > 0)
+     robot.disappear();
+  
+  robot.rotateCannon(-1 * rotationAngle);
+  robot.turn(rotationAngle);
+  
+  robot.ahead(distanceMove);
+};
+
+
+Robot.prototype.onWallCollision = function(ev) {
+				var robot = ev.robot;
+  var rotationAngle = 60;
+  
+  robot.rotateCannon(-1 * rotationAngle);
+  robot.turn(rotationAngle);
+};
+
+Robot.prototype.onRobotCollision = function(ev) {
+				 var robot = ev.rotationAngle;
+  var rotationAngle = 90;
+  
+  robot.rotateCannon(-1 * rotationAngle);
+  robot.turn(rotationAngle);
+};
